@@ -13,7 +13,7 @@ Build GTAI — an AI-native open-world game (GTA 7). Set in New York City. Reali
 ## Project Location
 - Project root: `D:\Projects\GitHub Projects\GTAI\GTA7_UE5\`
 - .uproject file: `GTA7.uproject`
-- GitHub: `https://github.com/xxvovalamaxx-ops/GTA7`
+**GitHub:** `https://github.com/xxvovalamaxx-ops/GTAI`
 - Engine: UE 5.8 at `C:\Program Files\Epic Games\UE_5.8\`
 
 ## Module Architecture
