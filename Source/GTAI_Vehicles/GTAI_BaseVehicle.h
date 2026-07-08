@@ -12,6 +12,7 @@ class UChaosWheeledVehicleSimulationComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UGTAI_VehicleDamageComponent;
+class UInputAction;
 
 /**
  * Base vehicle pawn for all GTAI vehicles.
@@ -118,4 +119,43 @@ protected:
 
     /** Update camera FOV based on current speed. */
     void UpdateCameraFOV(float DeltaSeconds);
+
+    /** Apply mechanical degradation from damage state to the Chaos movement component. */
+    void ApplyMechanicalDegradation(float DeltaSeconds);
+
+    /** Arcade steering assist: auto-center + catchable-drift counter-steer. */
+    void ApplyArcadeAssists(float DeltaSeconds);
+
+private:
+    // --- Cached input state (applied each tick so damage/assists can reshape it) ---
+    float CachedThrottle = 0.f;
+    float CachedBrake = 0.f;
+    float CachedSteer = 0.f;
+    bool bCachedHandbrake = false;
+
+    // --- Enhanced Input action assets (assign per-Blueprint) ---
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|Input")
+    TObjectPtr<UInputAction> IA_Throttle;
+
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|Input")
+    TObjectPtr<UInputAction> IA_Brake;
+
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|Input")
+    TObjectPtr<UInputAction> IA_Steer;
+
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|Input")
+    TObjectPtr<UInputAction> IA_Handbrake;
+
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|Input")
+    TObjectPtr<UInputAction> IA_ExitVehicle;
+
+    // --- Input handlers (Enhanced Input) ---
+    void OnThrottle(const FInputActionValue& Value);
+    void OnBrake(const FInputActionValue& Value);
+    void OnSteer(const FInputActionValue& Value);
+    void OnHandbrake(const FInputActionValue& Value);
+    void OnExitPressed(const FInputActionValue& Value);
+
+    /** Find a safe exit spawn location beside the vehicle (right side default). */
+    bool FindExitSpawn(FVector& OutLocation, FRotator& OutRotation) const;
 };

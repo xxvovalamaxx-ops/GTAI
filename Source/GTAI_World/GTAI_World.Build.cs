@@ -24,7 +24,19 @@ public class GTAI_World : ModuleRules
 			"MassActors",
 			"MassGameplay",
 			"StructUtils",
-			"GameplayTags"
+			"GameplayTags",
+			"WorldPartition",    // streaming cell assignment + runtime spatial hash
+			"Json",              // FJsonSerializer / FJsonObject
+			"JsonUtilities"      // JsonObjectConverter
+		});
+
+		// Geometry generation: build merged per-cell Nanite static meshes from
+		// OSM footprints at runtime via FMeshDescription.
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"MeshDescription",    // FMeshDescription / FStaticMeshAttributes
+			"GeometryCore",       // mesh builder helpers
+			"ProceduralMeshComponent" // fallback debug preview
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

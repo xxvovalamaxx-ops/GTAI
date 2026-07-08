@@ -379,7 +379,7 @@ def _geom_to_points(geom):
 
 def parse_osm(obj: dict, bbox: dict):
     elements = obj.get("elements", [])
-    streets, buildings, water, parks, districts = [], [], [], [], []
+    streets, buildings, water, parks, districts, signals = [], [], [], [], [], []
 
     lat0 = (bbox["south"] + bbox["north"]) / 2.0
     lon0 = (bbox["west"] + bbox["east"]) / 2.0
@@ -417,6 +417,23 @@ def parse_osm(obj: dict, bbox: dict):
                 "length_m": round(haversine_chain(pts), 2),
             }
             streets.append(street)
+
+        # ---- TRAFFIC SIGNALS (nodes only) ----
+        # OSM convention: highway=traffic_signals on a node. The node geometry
+        # is the node's own (lon,lat). Used by the World Partition importer to
+        # seed intersection signal phases.
+        elif etype == "node" and tags.get("highway") == "traffic_signals":
+            lon = float(el.get("lon", 0.0))
+            lat = float(el.get("lat", 0.0))
+            signals.append({
+                "id": el.get("id"),
+                "name": tags.get("name", tags.get("crossing", "")),
+                "location": [round(lon, 7), round(lat, 7)],
+                "location_local_m": [
+                    round(x, 3) for x in local_meters(lat, lon, lat0, lon0)
+                ],
+            })
+            continue
 
         # ---- BUILDINGS (ways only) ----
         elif etype == "way" and "building" in tags and geom:
@@ -488,6 +505,9 @@ def parse_osm(obj: dict, bbox: dict):
                     "name": tags.get("name", ""),
                     "admin_level": int(admin_l) if admin_l.isdigit() else None,
                     "place": tags.get("place", ""),
+                    # Raw OSM landuse/leisure tag — the importer maps this to a
+                    # NYC-style zoning class (R8 / C6 / M1 / PARK) for height caps.
+                    "zoning_tag": tags.get("landuse", tags.get("leisure", tags.get("place", ""))),
                     "polygons": _localize_polygon(poly, lat0, lon0),
                     "polygons_latlon": poly,
                 })
@@ -498,6 +518,7 @@ def parse_osm(obj: dict, bbox: dict):
         "water": water,
         "parks": parks,
         "districts": districts,
+        "signals": signals,
         "_anchor": (lat0, lon0),
     }
 
