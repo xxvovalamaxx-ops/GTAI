@@ -10,6 +10,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
 #include "GTAI_AudioTypes.h"
+// Vehicle class enum for procedural engine notes.
+#include "GTAI_VehicleTypes.h"
 #include "GTAI_SFXManager.generated.h"
 
 class USoundBase;
