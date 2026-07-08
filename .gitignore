@@ -1,0 +1,28 @@
+# Unreal Engine 5 .gitignore
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+*.VC.db
+*.VC.opendb
+*.pdb
+*.lock.json
+*.snapshot.json
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Common directories that should not be under source control
+/Content/Collections/
+/Content/Developers/
+/Content/__ExternalActors__/
+/Content/__ExternalObjects__/
+
+# Crash reports
+CrashReportClient/

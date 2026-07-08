@@ -1,0 +1,121 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "Games",
+	"Description": "GTAI — AI-Native Open World Game",
+	"Modules": [
+		{
+			"Name": "GTA7",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		},
+		{
+			"Name": "GTAI_Core",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		},
+		{
+			"Name": "GTAI_NPC",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GTAI_Core"
+			]
+		},
+		{
+			"Name": "GTAI_World",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GTAI_Core"
+			]
+		},
+		{
+			"Name": "GTAI_Vehicles",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GTAI_Core"
+			]
+		},
+		{
+			"Name": "GTAI_Combat",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GTAI_Core"
+			]
+		},
+		{
+			"Name": "GTAI_AI",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GTAI_Core",
+				"GTAI_NPC",
+				"GTAI_World"
+			]
+		},
+		{
+			"Name": "GTAI_UI",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GTAI_Core"
+			]
+		},
+		{
+			"Name": "GTAI_Audio",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GTAI_Core"
+			]
+		},
+		{
+			"Name": "GTAI_Quests",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GTAI_Core",
+				"GTAI_NPC",
+				"GTAI_World"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "WorldPartition",
+			"Enabled": true
+		},
+		{
+			"Name": " modelingToolsEditorMode",
+			"Enabled": true
+		},
+		{
+			"Name": "Bridge",
+			"Enabled": true
+		},
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		}
+	],
+	"TargetPlatforms": [
+		"Windows"
+	]
+}
