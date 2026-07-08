@@ -108,5 +108,26 @@ protected:
     UPROPERTY()
     TObjectPtr<APlayerController> OwningPC;
 
+    // Widget classes used to spawn the persistent layers. Assign in the
+    // manager's Blueprint subclass or via defaults; falls back to the C++
+    // class if the Blueprint subclass is null.
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|UI")
+    TSubclassOf<UGTAIUWHud> HUDClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|UI")
+    TSubclassOf<UGTAIUWNotificationLayer> NotificationLayerClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|UI")
+    TSubclassOf<UGTAIUWPhone> PhoneClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "GTAI|UI")
+    TSubclassOf<UGTAIUWPauseMenu> PauseMenuClass;
+
     EGTAIInputMode CurrentMode = EGTAIInputMode::Gameplay;
+
+private:
+    // Stack of currently-pushed full-screen UI layers (phone, pause menu, ...).
+    // Used by PopUI to restore the correct input mode when the top layer closes.
+    UPROPERTY()
+    TArray<TObjectPtr<UWidget>> UIStack;
 };

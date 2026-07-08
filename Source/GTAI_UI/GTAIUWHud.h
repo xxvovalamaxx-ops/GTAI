@@ -49,4 +49,20 @@ protected:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UGTAIUWWorldStatus> WorldStatus;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UGTAIUWRadar> Radar;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UGTAIUWWeaponWheel> WeaponWheel;
+
+protected:
+    // Cached ViewModels captured in BindViewModels. The HUD compositor polls
+    // these at HudUpdateInterval and forwards to sub-widget setters; leaf
+    // widgets that are MVVM-bound in Blueprint rely on FieldNotify instead.
+    UPROPERTY()
+    TObjectPtr<UGTAIViewModel_Player> CachedPlayerVM = nullptr;
+
+    UPROPERTY()
+    TObjectPtr<UGTAIViewModel_World> CachedWorldVM = nullptr;
+
+    UPROPERTY()
+    TObjectPtr<UGTAIViewModel_Map> CachedMapVM = nullptr;
+
+    float HudUpdateAccumulator = 0.f;
+    static constexpr float HudUpdateInterval = 1.f / 12.f; // ~12 Hz bridge
 };

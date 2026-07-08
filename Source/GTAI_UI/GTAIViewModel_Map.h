@@ -10,7 +10,7 @@
 #include "GTAIViewModel_Map.generated.h"
 
 UENUM(BlueprintType)
-enum class EGTAI RadarMode : uint8
+enum class EGTAIRadarMode : uint8
 {
     Rotated,   // world rotates around fixed center blip (default, GTA V style)
     NorthUp    // blip rotates, map oriented to world north
@@ -23,9 +23,9 @@ class GTAIUI_API UGTAIViewModel_Map : public UMVVMViewModelBase
 
 public:
     UFUNCTION(BlueprintCallable, FieldNotify, Getter)
-    EGTAI RadarMode GetRadarMode() const { return RadarMode; }
+    EGTAIRadarMode GetRadarMode() const { return RadarMode; }
     UFUNCTION(BlueprintCallable, FieldNotify, Setter)
-    void SetRadarMode(EGTAI RadarMode InMode);
+    void SetRadarMode(EGTAIRadarMode InMode);
 
     UFUNCTION(BlueprintCallable, FieldNotify, Getter)
     int32 GetZoomLevel() const { return ZoomLevel; }
@@ -54,7 +54,7 @@ public:
     float GetRadarRange() const { return RadarRange; }
 
 protected:
-    EGTAI RadarMode RadarMode = EGTAI RadarMode::Rotated;
+    EGTAIRadarMode RadarMode = EGTAIRadarMode::Rotated;
     int32 ZoomLevel = 1;
     int32 MaxZoomLevels = 3;
     bool bHasWaypoint = false;
