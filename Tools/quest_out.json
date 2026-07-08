@@ -1,0 +1,73 @@
+{
+  "quest_id": "q_dry_184b",
+  "title": "Escort for NYPD",
+  "giver": "Lt. Chen",
+  "faction": "NYPD",
+  "archetype": "escort",
+  "difficulty": 10,
+  "synopsis": "DRY-RUN: Lt. Chen wants a escort job done in Uptown.",
+  "briefing": "(dry-run) Generated without LLM. Wire DEEPSEEK_API_KEY to produce real dialogue.",
+  "hook": "(dry-run) hook line",
+  "objectives": [
+    {
+      "type": "ReachLocation",
+      "target": "Uptown",
+      "detail": "Get to the site."
+    },
+    {
+      "type": "EliminateTarget",
+      "target": "Sal",
+      "detail": "Resolve the target."
+    }
+  ],
+  "rewards": {
+    "xp": 3571,
+    "cash": 1857,
+    "reputation_delta": 8,
+    "risk_multiplier": 1.3
+  },
+  "fail_states": [
+    "Player detected",
+    "Target escapes"
+  ],
+  "branch": {
+    "on_success": null,
+    "on_fail": null
+  },
+  "chain": [
+    {
+      "depth": 1,
+      "branch_id": "b1",
+      "archetype": "escort",
+      "faction": "NYPD",
+      "locked_until": "quest_completed:depth_0",
+      "rewards": {
+        "xp": 4821,
+        "cash": 2507,
+        "reputation_delta": 9,
+        "risk_multiplier": 1.3
+      }
+    },
+    {
+      "depth": 2,
+      "branch_id": "b2",
+      "archetype": "escort",
+      "faction": "NYPD",
+      "locked_until": "quest_completed:depth_1",
+      "rewards": {
+        "xp": 6071,
+        "cash": 3157,
+        "reputation_delta": 10,
+        "risk_multiplier": 1.3
+      }
+    }
+  ],
+  "reputation_ripple": {
+    "Southside Crew": -3,
+    "Downtown Syndicate": -3,
+    "Aether Corp": 4,
+    "NYPD": 8,
+    "City Hall": 4,
+    "Dock Workers": 0
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "player_level": 4,
+  "heat": 10,
+  "player_faction_standing": {
+    "Southside Crew": 60, "Downtown Syndicate": -40, "Aether Corp": 0,
+    "NYPD": -20, "City Hall": 0, "Dock Workers": 15
+  },
+  "districts": {
+    "Bronx": {"control": 10},
+    "Harlem": {"control": 80}
+  },
+  "npcs": [
+    {"id": "n1", "name": "Big Mike", "faction": "Southside Crew", "district": "Bronx",
+     "archetype": "fixer", "discovered": true, "alive": true, "reputation": 50},
+    {"id": "n2", "name": "Ghost", "faction": "Downtown Syndicate", "district": "Harlem",
+     "archetype": "enforcer", "discovered": false, "alive": true, "reputation": -20}
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "quest_id": "q_dry_1717",
+  "title": "Retrieval for Downtown Syndicate",
+  "giver": "Ghost",
+  "faction": "Downtown Syndicate",
+  "archetype": "retrieval",
+  "difficulty": 10,
+  "synopsis": "DRY-RUN: Ghost wants a retrieval job done in Bronx.",
+  "briefing": "(dry-run) Generated without LLM. Wire DEEPSEEK_API_KEY to produce real dialogue.",
+  "hook": "(dry-run) hook line",
+  "objectives": [
+    {
+      "type": "ReachLocation",
+      "target": "Bronx",
+      "detail": "Get to the site."
+    },
+    {
+      "type": "EliminateTarget",
+      "target": "Big Mike",
+      "detail": "Resolve the target."
+    }
+  ],
+  "rewards": {
+    "xp": 3571,
+    "cash": 1428,
+    "reputation_delta": 8,
+    "risk_multiplier": 1.0
+  },
+  "fail_states": [
+    "Player detected",
+    "Target escapes"
+  ],
+  "branch": {
+    "on_success": null,
+    "on_fail": null
+  },
+  "chain": [],
+  "reputation_ripple": {
+    "Southside Crew": -3,
+    "Downtown Syndicate": 8,
+    "Aether Corp": 4,
+    "NYPD": -3,
+    "City Hall": 0,
+    "Dock Workers": 0
+  }
+}
