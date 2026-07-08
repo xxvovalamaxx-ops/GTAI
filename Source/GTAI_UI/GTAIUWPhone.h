@@ -49,4 +49,8 @@ protected:
     /** Unread badge counts keyed by AppId (e.g. "Messages" -> 3). */
     UPROPERTY()
     TMap<FName, int32> AppBadges;
+
+    /** Status-bar clock ticker (1 Hz while the phone is active). */
+    UPROPERTY()
+    FTimerHandle ClockTimerHandle;
 };
