@@ -45,4 +45,8 @@ protected:
     /** Stack of active app widgets for back-navigation. */
     UPROPERTY()
     TArray<TObjectPtr<UGTAIUWAppBase>> AppStack;
+
+    /** Unread badge counts keyed by AppId (e.g. "Messages" -> 3). */
+    UPROPERTY()
+    TMap<FName, int32> AppBadges;
 };

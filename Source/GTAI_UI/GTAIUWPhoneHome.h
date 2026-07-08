@@ -20,4 +20,8 @@ public:
     /** Populate grid+dock from a data-table of installed apps. */
     UFUNCTION(BlueprintCallable, Category = "GTAI|UI|Phone")
     void BuildAppGrid(const TArray<TSubclassOf<UGTAIUWAppBase>>& Apps);
+
+    /** Update the unread badge on a dock/grid icon (0 hides it). */
+    UFUNCTION(BlueprintCallable, Category = "GTAI|UI|Phone")
+    void SetAppBadge(FName AppId, int32 Count);
 };
