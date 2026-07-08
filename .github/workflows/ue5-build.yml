@@ -1,0 +1,121 @@
+name: UE5 Build & Package (GTAI / GTA7)
+
+# ---------------------------------------------------------------------------
+# CI for the GTAI Unreal Engine 5.8 project.
+#
+# IMPORTANT: GitHub-hosted runners do NOT ship Unreal Engine. This workflow is
+# designed to run on a SELF-HOSTED Windows runner that has UE 5.8 installed at
+# the path below (override with the `ue_root` input). Register the runner with
+# the label `ue5-windows` (or change `runs-on`).
+#
+# What it does:
+#   1. Checks out the repo with Git LFS objects.
+#   2. Validates the build setup with the Python validator.
+#   3. Compiles the Editor target (catches C++ / module graph errors).
+#   4. Optionally packages a Windows Shipping build via RunUAT.
+# ---------------------------------------------------------------------------
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ue_root:
+        description: "Path to the UE 5.8 engine root"
+        required: false
+        default: "C:\\Program Files\\Epic Games\\UE_5.8"
+      package:
+        description: "Also package a Windows build (true/false)"
+        required: false
+        default: "false"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile & Validate (UE 5.8)
+    runs-on: [self-hosted, windows, ue5-windows]
+    timeout-minutes: 240
+
+    env:
+      UE_ROOT: ${{ github.event.inputs.ue_root || 'C:\Program Files\Epic Games\UE_5.8' }}
+      PROJECT_ROOT: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout (with Git LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Verify Git LFS objects
+        shell: pwsh
+        run: |
+          git lfs install --local
+          git lfs pull
+          git lfs ls-files | Select-Object -First 20
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Validate build setup
+        shell: pwsh
+        run: |
+          python Tools/CI/validate_build.py --project-root "$env:PROJECT_ROOT" --engine-root "$env:UE_ROOT"
+
+      - name: Generate project files
+        shell: pwsh
+        run: |
+          & "$env:UE_ROOT\Engine\Build\BatchFiles\Build.bat" `
+            -ProjectFiles `
+            -Project="$env:PROJECT_ROOT\GTA7.uproject" `
+            -Game
+
+      - name: Compile Editor target (Development)
+        shell: pwsh
+        run: |
+          & "$env:UE_ROOT\Engine\Build\BatchFiles\Build.bat" `
+            GTA7Editor `
+            Win64 `
+            Development `
+            -Project="$env:PROJECT_ROOT\GTA7.uproject" `
+            -WaitMutex `
+            -NoHotReloadFromIDE
+
+      - name: Package Windows Shipping build (optional)
+        if: ${{ github.event.inputs.package == 'true' || github.event_name == 'workflow_dispatch' }}
+        shell: pwsh
+        run: |
+          & "$env:UE_ROOT\Engine\Build\BatchFiles\RunUAT.bat" `
+            BuildCookRun `
+            -Project="$env:PROJECT_ROOT\GTA7.uproject" `
+            -Platform=Win64 `
+            -Configuration=Shipping `
+            -Target=GTA7 `
+            -Build -Cook -Stage -Pak -Archive `
+            -ArchiveDirectory="$env:PROJECT_ROOT\Build\Package" `
+            -NoP4
+
+      - name: Upload packaged build
+        if: ${{ success() && (github.event.inputs.package == 'true') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: GTA7-Win64-Shipping
+          path: ${{ github.workspace }}\Build\Package\*
+          retention-days: 14
+
+      - name: Upload compile logs on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            ${{ github.workspace }}\Saved\Logs\*
+            ${{ github.workspace }}\Saved\Builds\*
+          retention-days: 7
