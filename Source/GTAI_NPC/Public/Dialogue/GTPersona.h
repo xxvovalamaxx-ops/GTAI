@@ -30,4 +30,13 @@ namespace GTAI::NPC
 		FLinearColor PrimaryColor = FLinearColor::Cyan;
 		FLinearColor BackgroundColor = FLinearColor(0.1f, 0.1f, 0.15f, 0.95f);
 	};
+
+	// ---- Data-driven persona loading (JSON overrides / extras) ----
+	// Loads personas from a JSON file keyed by PersonaId. Entries whose id
+	// matches a built-in advisor persona override it; new ids are added.
+	// Returns the number of personas loaded (0 on missing/invalid file).
+	GTAI_NPC_API int32 LoadPersonasFromFile(const FString& FilePath, TMap<FName, FPersona>& OutPersonas);
+
+	// Convenience wrapper that loads from Content/AI/Personas/Advisor.json.
+	GTAI_NPC_API int32 LoadAdvisorPersonas(TMap<FName, FPersona>& OutPersonas);
 }

@@ -152,22 +152,6 @@ private:
 };
 
 // ───────────────────────── UGTAIUWWeaponWheel ─────────────────────────
-namespace
-{
-    float AngleToStep(float AngleRad, int32 Count)
-    {
-        if (Count <= 0)
-        {
-            return 0.f;
-        }
-        // Normalize to [-PI, PI] then map so slot 0 sits at the top.
-        float A = FMath::Fmod(AngleRad + HALF_PI, TWO_PI);
-        if (A < 0.f) A += TWO_PI;
-        const float Step = TWO_PI / (float)Count;
-        return FMath::FloorToFloat(A / Step + 0.5f) - (float)Count * 0.5f;
-    }
-}
-
 TSharedRef<SWidget> UGTAIUWWeaponWheel::RebuildWidget()
 {
     MyWheel = SNew(SGTAIWeaponWheel)
