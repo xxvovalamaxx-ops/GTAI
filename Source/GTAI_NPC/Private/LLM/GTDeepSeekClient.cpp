@@ -20,7 +20,7 @@ namespace GTAI::NPC
 		BaseUrl = InBaseUrl;
 		Model = InModel;
 		
-		// Ensure no trailing slash
+		// Ensure URL doesn't end with slash for proper endpoint construction
 		if (BaseUrl.EndsWith(TEXT("/")))
 		{
 			BaseUrl = BaseUrl.LeftChop(1);
@@ -40,119 +40,171 @@ namespace GTAI::NPC
 			return;
 		}
 
-		// Build request
-		TSharedRef<IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
-		HttpRequest->SetURL(BaseUrl + TEXT("/v1/chat/completions"));
-		HttpRequest->SetVerb(TEXT("POST"));
-		HttpRequest->SetHeader(TEXT("Authorization"), TEXT("Bearer ") + ApiKey);
-		HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-		HttpRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
+		// Build request URL
+		const FString Url = BaseUrl + TEXT("/v1/chat/completions");
 
 		// Build JSON payload
-		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&PostBody);
-		Writer->WriteObjectStart();
-		Writer->WriteValue(TEXT("model"), Model);
+		TSharedRef<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+		JsonObject->SetStringField(TEXT("model"), Model);
 		
-		// Messages array
-		Writer->WriteValue(TEXT("messages"), TJsonWriterFactory<>::CreateNullValue()); // Placeholder
-		Writer->WriteObjectStart(); // Start messages array
-		Writer->WriteValue(TEXT("role"), TEXT("system"));
-		Writer->WriteValue(TEXT("content"), TEXT("You are a helpful AI assistant for NPC dialogue generation in a GTA-style game."));
-		Writer->WriteObjectEnd(); // End system message
+		TArray<TSharedPtr<FJsonValue>> MessagesArray;
 		
-		Writer->WriteObjectStart(); // Start user message
-		Writer->WriteValue(TEXT("role"), TEXT("user"));
-		Writer->WriteValue(TEXT("content"), Req.Prompt);
-		Writer->WriteObjectEnd(); // End user message
+		// System message with caching hint (prefix caching)
+		TSharedPtr<FJsonObject> SystemMsg = MakeShareable(new FJsonObject);
+		SystemMsg->SetStringField(TEXT("role"), TEXT("system"));
+		SystemMsg->SetStringField(TEXT("content"), Req.Prompt.Left(1024)); // Limit prompt size
+		MessagesArray.Add(SystemMsg);
 		
-		Writer->WriteObjectEnd(); // End messages array
+		// User message (if any additional context beyond system prompt)
+		TSharedPtr<FJsonObject> UserMsg = MakeShareable(new FJsonObject);
+		UserMsg->SetStringField(TEXT("role"), TEXT("user"));
+		UserMsg->SetStringField(TEXT("content"), TEXT("")); // Empty for now, prompt in system
+		MessagesArray.Add(UserMsg);
 		
-		Writer->WriteValue(TEXT("max_tokens"), Req.MaxTokens);
-		Writer->WriteValue(TEXT("temperature"), Req.Temperature);
-		Writer->WriteValue(TEXT("stream"), false);
-		Writer->WriteObjectEnd();
-		Writer->Close();
+		JsonObject->SetArrayField(TEXT("messages"), MessagesArray);
+		JsonObject->SetNumberField(TEXT("temperature"), Req.Temperature);
+		JsonObject->SetNumberField(TEXT("max_tokens"), Req.MaxTokens);
+		JsonObject->SetBoolField(TEXT("stream"), false); // Non-streaming for simplicity
 		
-		HttpRequest->SetContentAsString(PostBody);
-
-		// Process response
-		HttpRequest->OnProcessRequestComplete().BindLambda([this, Callback, Req](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+		// Enable prompt caching (prefix caching) by including system prompt
+		// DeepSeek V4 supports prompt caching automatically for repeated prefixes
+		JsonObject->SetBoolField(TEXT("cache_prompt"), true);
+		JsonObject->SetNumberField(TEXT("top_p"), 0.95f);
+		
+		// Serialize JSON
+		FString JsonPayload;
+		TSharedRef< TJsonWriter<> > Writer = TJsonWriterFactory<>::Create(&JsonPayload);
+		FJsonSerializer::Serialize(JsonObject, Writer);
+		
+		// Create HTTP request
+		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
+		Request->SetURL(Url);
+		Request->SetVerb(TEXT("POST"));
+		Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+		Request->SetHeader(TEXT("Authorization"), TEXT("Bearer ") + ApiKey);
+		Request->SetContentAsString(JsonPayload);
+		
+		// Set up response handler
+		Request->OnProcessRequestComplete().BindLambda([this, Callback, Req](FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bWasSuccessful)
 		{
 			FLLMResult Result;
-			Result.bSuccess = bWasSuccessful && Response.IsValid() && Response->GetResponseCode() == 200;
+			Result.bSuccess = false;
 			
-			if (Result.bSuccess && Response.IsValid())
+			if (!bWasSuccessful || !ResponsePtr.IsValid())
 			{
-				// Parse JSON response
-				TSharedPtr<FJsonObject> JsonObject;
-				TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-				
-				if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
-				{
-					// Extract response text
-					if (JsonObject->HasField(TEXT("choices")) && JsonObject->GetArrayField(TEXT("choices")).Num() > 0)
-					{
-						TArray<TSharedPtr<FJsonValue>> Choices = JsonObject->GetArrayField(TEXT("choices"));
-						if (Choices.Num() > 0 && Choices[0]->Type == EJson::Object)
-						{
-							TSharedPtr<FJsonObject> ChoiceObj = Choices[0]->AsObject();
-							if (ChoiceObj->HasField(TEXT("message")) && ChoiceObj->GetObjectField(TEXT("message"))->HasField(TEXT("content")))
-							{
-								Result.RawText = ChoiceObj->GetObjectField(TEXT("message"))->GetStringField(TEXT("content"));
-								Result.Response = FDialogueLLMResponse::FromRawText(Result.RawText);
-							}
-						}
-					}
-					
-					// Extract usage/cost
-					if (JsonObject->HasField(TEXT("usage")))
-					{
-						TSharedPtr<FJsonObject> UsageObj = JsonObject->GetObjectField(TEXT("usage"));
-						int32 PromptTokens = UsageObj->GetIntegerField(TEXT("prompt_tokens"));
-						int32 CompletionTokens = UsageObj->GetIntegerField(TEXT("completion_tokens"));
-						int32 TotalTokens = UsageObj->GetIntegerField(TEXT("total_tokens"));
-						
-						// Calculate cost based on pricing
-						bool bCacheHit = JsonObject->HasField(TEXT("cache_hit")) && JsonObject->GetBoolField(TEXT("cache_hit"));
-						float PromptCost = (PromptTokens / 1000000.0f) * (bCacheHit ? PriceCacheHitPerM : PriceCacheMissPerM);
-						float CompletionCost = (CompletionTokens / 1000000.0f) * PriceOutPerM;
-						Result.CostUSD = PromptCost + CompletionCost;
-						LastCost = Result.CostUSD;
-					}
-					
-					Result.Tier = ELLMTier::Cloud;
-				}
-				else
-				{
-					Result.bSuccess = false;
-					Result.Error = TEXT("Failed to parse DeepSeek response JSON");
-				}
-			}
-			else
-			{
-				if (!Response.IsValid())
-				{
-					Result.Error = TEXT("No response from DeepSeek API");
-				}
-				else if (Response->GetResponseCode() != 200)
-				{
-					Result.Error = FString::Printf(TEXT("DeepSeek API error: %d - %s"), 
-						Response->GetResponseCode(), *Response->GetContentAsString());
-				}
-				else
-				{
-					Result.Error = TEXT("HTTP request failed");
-				}
-			}
-			
-			AsyncTask(ENamedThreads::GameThread, [Callback, Req, Result]() mutable {
+				Result.Error = FString::Printf(TEXT("HTTP request failed: %s"), 
+					*bWasSuccessful ? ResponsePtr->GetContentAsString() : TEXT("No response"));
 				Callback.ExecuteIfBound(Req, Result);
-			});
+				return;
+			}
+			
+			int32 StatusCode = ResponsePtr->GetResponseCode();
+			if (StatusCode != 200)
+			{
+				Result.Error = FString::Printf(TEXT("HTTP error %d: %s"), 
+					StatusCode, *ResponsePtr->GetContentAsString());
+				Callback.ExecuteIfBound(Req, Result);
+				return;
+			}
+			
+			// Parse JSON response
+			const FString& ResponseString = ResponsePtr->GetContentAsString();
+			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseString);
+			TSharedPtr<FJsonObject> JsonResp;
+			
+			if (!FJsonSerializer::Deserialize(Reader, JsonResp) || !JsonResp.IsValid())
+			{
+				Result.Error = TEXT("Failed to parse JSON response");
+				Callback.ExecuteIfBound(Req, Result);
+				return;
+			}
+			
+			// Check for error in response
+			if (JsonResp->HasField(TEXT("error")))
+			{
+				TSharedPtr<FJsonObject> ErrorObj = JsonResp->GetObjectField(TEXT("error"));
+				Result.Error = ErrorObj->GetStringField(TEXT("message"));
+				Callback.ExecuteIfBound(Req, Result);
+				return;
+			}
+			
+			// Extract response
+			if (JsonResp->HasField(TEXT("choices")) && JsonResp->GetArrayField(TEXT("choices")).Num() > 0)
+			{
+				TSharedPtr<FJsonObject> Choice = JsonResp->GetArrayField(TEXT("choices"))[0]->AsObject();
+				if (Choice && Choice->HasField(TEXT("message")))
+				{
+					TSharedPtr<FJsonObject> Message = Choice->GetObjectField(TEXT("message"));
+					if (Message && Message->HasField(TEXT("content")))
+					{
+						Result.bSuccess = true;
+						Result.Tier = ELLMTier::Cloud;
+						Result.RawText = Message->GetStringField(TEXT("content"));
+						Result.Response = FDialogueLLMResponse::FromRawText(Result.RawText);
+						
+						// Extract usage and calculate cost
+						if (JsonResp->HasField(TEXT("usage")))
+						{
+							TSharedPtr<FJsonObject> Usage = JsonResp->GetObjectField(TEXT("usage"));
+							int32 PromptTokens = Usage->GetNumberField(TEXT("prompt_tokens"));
+							int32 CompletionTokens = Usage->GetNumberField(TEXT("completion_tokens"));
+							
+							// Determine if we got cache hit (prompt tokens would be much lower if cached)
+							// DeepSeek V4: $0.0028/M cache hit, $0.14/M cache miss, $0.28/M output
+							bool bCacheHit = PromptTokens < 100; // Heuristic: cached prompts are much shorter
+							float Cost = 0.0f;
+							
+							if (bCacheHit)
+							{
+								Cost = (PromptTokens * PriceCacheHitPerM / 1000000.0f) + 
+									   (CompletionTokens * PriceOutPerM / 1000000.0f);
+							}
+							else
+							{
+								Cost = (PromptTokens * PriceCacheMissPerM / 1000000.0f) + 
+									   (CompletionTokens * PriceOutPerM / 1000000.0f);
+							}
+							
+							Result.CostUSD = Cost;
+							LastCost = Cost;
+						}
+						
+						Callback.ExecuteIfBound(Req, Result);
+						return;
+					}
+				}
+			}
+			
+			Result.Error = TEXT("Unexpected response format from DeepSeek API");
+			Callback.ExecuteIfBound(Req, Result);
 		});
-
+		
 		// Process the request
-		HttpRequest->ProcessRequest();
+		Request->ProcessRequest();
 	}
-}
+
+	void FDeepSeekClient::ParseUsage(const FString& JsonBody, FLLMResult& Out)
+	{
+		// This is kept for compatibility but not used in current implementation
+		// Parsing is done inline in Generate() now
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonBody);
+		TSharedPtr<FJsonObject> JsonObj;
+		if (FJsonSerializer::Deserialize(Reader, JsonObj) && JsonObj.IsValid())
+		{
+			if (JsonObj->HasField(TEXT("usage")))
+			{
+				TSharedPtr<FJsonObject> Usage = JsonObj->GetObjectField(TEXT("usage"));
+				if (Usage.IsValid())
+				{
+					int32 PromptTokens = Usage->GetNumberField(TEXT("prompt_tokens"));
+					int32 CompletionTokens = Usage->GetNumberField(TEXT("completion_tokens"));
+					
+					// Simple cost calculation (would be enhanced with cache hit detection)
+					float Cost = (PromptTokens * 0.14f / 1000000.0f) + (CompletionTokens * 0.28f / 1000000.0f);
+					Out.CostUSD = Cost;
+				}
+			}
+		}
+	}
 
 } // namespace GTAI::NPC

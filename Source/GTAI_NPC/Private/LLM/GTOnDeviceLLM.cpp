@@ -6,16 +6,7 @@
 
 #include "GTOnDeviceLLM.h"
 #include "HAL/PlatformProcess.h"
-#include "Misc/ScopeLock.h"
 #include "HAL/RunnableThread.h"
-#include "HAL/Runnable.h"
-#include "Async/Async.h"
-#include "Misc/ScopeLock.h"
-
-#if PLATFORM_WINDOWS
-#include "AllowWindowsPlatformTypes.h"
-#include "HideWindowsPlatformTypes.h"
-#endif
 
 namespace GTAI::NPC
 {
@@ -23,23 +14,56 @@ namespace GTAI::NPC
 	{
 	public:
 		FOnDeviceLLMWorker(FOnDeviceLLM* InOwner, const FLLMRequest& InReq, const FOnLLMResult& InCallback)
-			: Owner(InOwner), Req(InReq), Callback(InCallback), bShouldRun)
+			: Owner(InOwner), Req(InReq), Callback(InCallback), bShouldRun(true)
 		{
-			bShouldRun = true;
+		}
+
+		virtual bool Init() override
+		{
+			return true;
 		}
 
 		virtual uint32 Run() override
 		{
+			if (!bShouldRun || !Owner || !Owner->IsReady())
+			{
+				return 1;
+			}
+
 			// Simulate llama.cpp inference - in real implementation this would call llama.cpp
-			// For now, simulate with a simple echo + delay
-			FPlatformProcess::Sleep(0.1f); // Simulate 100ms inference time
+			// For now, simulate with a small delay to represent processing time
+			FPlatformProcess::Sleep(0.1f); // ~100ms inference time
 
 			FLLMResult Result;
 			Result.bSuccess = true;
 			Result.Tier = ELLMTier::OnDevice;
 			
-			// Simple echo response for demo - in real implementation this would be actual LLM output
-			Result.RawText = TEXT("On-device response to: ") + Req.Prompt.Left(50);
+			// Generate a simple response based on the prompt (in real implementation, this comes from llama.cpp)
+			FString PromptLower = Req.Prompt.ToLower();
+			FString Response;
+			
+			if (PromptLen.Contains(TEXT("hello")) || PromptLen.Contains(TEXT("hi")))
+			{
+				Response = TEXT("Hello there! How can I help you today?");
+			}
+			else if (PromptLen.Contains(TEXT("weather")) || PromptLen.Contains(TEXT("temperature")))
+			{
+				Response = TEXT("I'm not connected to weather services, but I hope you're having a nice day!");
+			}
+			else if (PromptLen.Contains(TEXT("time")) || PromptLen.Contains(TEXT("clock")))
+			{
+				Response = TEXT("I don't have access to real-time clock, but I hope you're having a great moment!");
+			}
+			else if (PromptLen.Contains(TEXT("name")) || PromptLen.Contains(TEXT("who")))
+			{
+				Response = TEXT("I'm your local AI assistant, running right here on your device!");
+			}
+			else
+			{
+				Response = FString::Printf(TEXT("I understand you said: \"%s\". How can I assist you further?"), *Req.Prompt.Left(50));
+			}
+			
+			Result.RawText = Response;
 			Result.Response = FDialogueLLMResponse::FromRawText(Result.RawText);
 			Result.CostUSD = 0.0f; // Free local inference
 
@@ -66,7 +90,6 @@ namespace GTAI::NPC
 		FLLMRequest Req;
 		FOnLLMResult Callback;
 		std::atomic<bool> bShouldRun;
-		std::atomic<bool> bInRun{false};
 	};
 
 	FOnDeviceLLM::FOnDeviceLLM()
