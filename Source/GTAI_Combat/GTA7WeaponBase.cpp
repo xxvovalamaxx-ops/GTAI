@@ -72,23 +72,22 @@ void UGTA7WeaponBase::Fire()
 
 void UGTA7WeaponBase::PerformShot()
 {
-    // Apply recoil to owner character
-    if (OwnerCharacter)
+    if (!OwnerCharacter) return;
+
+    // Apply recoil
+    if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
     {
-        if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
-        {
-            float RecoilPitch = FMath::FRandRange(-Config.RecoilVertical * 0.6f, -Config.RecoilVertical);
-            float RecoilYaw = FMath::FRandRange(-Config.RecoilHorizontal, Config.RecoilHorizontal);
-            PC->AddPitchInput(RecoilPitch);
-            PC->AddYawInput(RecoilYaw);
-        }
+        float RecoilPitch = FMath::FRandRange(-Config.RecoilVertical * 0.6f, -Config.RecoilVertical);
+        float RecoilYaw = FMath::FRandRange(-Config.RecoilHorizontal, Config.RecoilHorizontal);
+        PC->AddPitchInput(RecoilPitch);
+        PC->AddYawInput(RecoilYaw);
     }
 
-    // Spread (bloom)
+    // Spread/Bloom
     CurrentSpread = FMath::Min(CurrentSpread + Config.SpreadIncrease, Config.MaxSpread);
 
-    // Actual hit detection delegated to subclass (HitscanWeapon, ProjectileWeapon)
-    OnShotFired();
+    // Delegate to subclass-specific firing logic (hitscan, projectile, melee)
+    PerformShot_Implementation(GetFireDirection(), GetFireDirection().Rotation());
 }
 
 void UGTA7WeaponBase::TickSpread(float DeltaTime)
