@@ -43,6 +43,9 @@ protected:
     // UWidget interface.
     virtual TSharedRef<SWidget> RebuildWidget() override;
 
+    /** Map a blip type to its on-radar color. */
+    static FLinearColor BlipColor(EGTAIBlipType Type);
+
     UPROPERTY()
     TObjectPtr<UGTAIViewModel_World> WorldVM;
 
@@ -52,4 +55,5 @@ protected:
     TSharedPtr<SGTAIRadar> MyRadar;
     float AccumulatedTime = 0.f;
     float SweepAngle = 0.f;
+    float BlipAccumulator = 0.f;
 };
