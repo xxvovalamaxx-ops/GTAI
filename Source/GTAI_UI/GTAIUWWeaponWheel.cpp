@@ -118,15 +118,15 @@ private:
         TArray<SlateIndex> Idx;
 
         // Center vertex (inner hub point).
-        V.Add(FSlateVertex::Make<C>(C, Col));
+        V.Add(FSlateVertex::Make(AllottedGeometry, C, FVector2D::ZeroVector, Col));
 
         for (int32 s = 0; s <= ArcSegs; ++s)
         {
             const float A = FMath::Lerp(A0, A1, (float)s / (float)ArcSegs);
             const FVector2D InnerP = C + FVector2D(FMath::Cos(A), FMath::Sin(A)) * Inner;
             const FVector2D OuterP = C + FVector2D(FMath::Cos(A), FMath::Sin(A)) * Outer;
-            V.Add(FSlateVertex::Make<C>(InnerP, Col));
-            V.Add(FSlateVertex::Make<C>(OuterP, Col));
+            V.Add(FSlateVertex::Make(AllottedGeometry, InnerP, FVector2D::ZeroVector, Col));
+            V.Add(FSlateVertex::Make(AllottedGeometry, OuterP, FVector2D::ZeroVector, Col));
         }
 
         // Triangle fan: center, then inner/outer pairs around the arc.

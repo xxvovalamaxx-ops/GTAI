@@ -50,4 +50,8 @@ protected:
     TSharedPtr<SGTAIWeaponWheel> MyWheel;
     int32 HighlightedIndex = 0;
     bool bIsOpen = false;
+
+    /** Owning storage for resolved slot icon brushes (kept alive for Slate). */
+    UPROPERTY()
+    TArray<FSlateBrush> ResolvedBrushes;
 };
