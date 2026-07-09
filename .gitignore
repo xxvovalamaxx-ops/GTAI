@@ -26,3 +26,11 @@ Content/__ExternalObjects__/
 
 # Crash reports
 CrashReportClient/
+
+# Generated MCP client configs
+GTAI/.codex/
+GTAI/.cursor/
+GTAI/.gemini/
+GTAI/.vscode/
+GTAI/.mcp.json
+GTAI/Config/DefaultEditorPerProjectUserSettings.ini
