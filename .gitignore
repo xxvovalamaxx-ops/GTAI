@@ -19,10 +19,10 @@ Thumbs.db
 .DS_Store
 
 # Common directories that should not be under source control
-/Content/Collections/
-/Content/Developers/
-/Content/__ExternalActors__/
-/Content/__ExternalObjects__/
+Content/Collections/
+Content/Developers/
+Content/__ExternalActors__/
+Content/__ExternalObjects__/
 
 # Crash reports
 CrashReportClient/
